@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(48, 12%, 98%);
+  --foreground: hsl(210, 10%, 15%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 10%, 15%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 10%, 15%);
+  --primary: hsl(82, 20%, 55%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(210, 40%, 98%);
+  --secondary-foreground: hsl(210, 10%, 15%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(210, 10%, 40%);
+  --accent: hsl(25, 65%, 55%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 70%, 50%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 40%, 90%);
+  --input: hsl(210, 40%, 96%);
+  --ring: hsl(82, 20%, 55%);
+  --radius: 0.75rem;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Source Sans Pro', serif;
+  --font-mono: Menlo, monospace;
+}
+
+.dark {
+  --background: hsl(210, 10%, 6%);
+  --foreground: hsl(210, 10%, 92%);
+  --card: hsl(210, 10%, 8%);
+  --card-foreground: hsl(210, 10%, 92%);
+  --popover: hsl(210, 10%, 8%);
+  --popover-foreground: hsl(210, 10%, 92%);
+  --primary: hsl(82, 20%, 65%);
+  --primary-foreground: hsl(210, 10%, 8%);
+  --secondary: hsl(210, 10%, 12%);
+  --secondary-foreground: hsl(210, 10%, 85%);
+  --muted: hsl(210, 10%, 14%);
+  --muted-foreground: hsl(210, 10%, 60%);
+  --accent: hsl(25, 65%, 65%);
+  --accent-foreground: hsl(210, 10%, 8%);
+  --destructive: hsl(0, 70%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 10%, 18%);
+  --input: hsl(210, 10%, 14%);
+  --ring: hsl(82, 20%, 65%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.notification-badge {
+  animation: pulse 2s infinite;
+}
+
+/* Floating card effects */
+.floating-card {
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* Masonry grid layout */
+.masonry-grid {
+  column-count: 1;
+  column-gap: 1.5rem;
+  break-inside: avoid;
+}
+
+@media (min-width: 640px) {
+  .masonry-grid {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .masonry-grid {
+    column-count: 3;
+  }
+}
+
+.masonry-item {
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  break-inside: avoid;
+}
+
+/* Gradient overlays */
+.gradient-overlay {
+  background: linear-gradient(135deg, rgba(139, 154, 119, 0.9), rgba(230, 126, 34, 0.8));
+}
+
+/* Sidebar transitions */
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-closed {
+  transform: translateX(-100%);
+}
+
+/* Hero video styling */
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+
+/* Map container */
+.leaflet-container {
+  @apply rounded-xl;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-foreground;
+}
+
+/* Chat bubble styles */
+.chat-bubble-user {
+  @apply bg-primary text-primary-foreground rounded-lg rounded-br-sm p-3 ml-auto max-w-xs;
+}
+
+.chat-bubble-ai {
+  @apply bg-secondary text-secondary-foreground rounded-lg rounded-bl-sm p-3 mr-auto max-w-xs;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+/* Interactive elements */
+.interactive:hover {
+  @apply scale-105 transition-transform duration-200;
+}
+
+/* Payment form styling */
+.payment-input {
+  @apply w-full p-3 border border-border rounded-lg bg-input text-foreground focus:ring-2 focus:ring-ring focus:border-transparent;
+}
+
+/* Category icons */
+.category-icon {
+  @apply w-12 h-12 rounded-lg flex items-center justify-center text-xl;
+}
