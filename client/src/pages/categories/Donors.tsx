@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -58,6 +58,29 @@ export default function Donors() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | undefined>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fix z-index issues with Leaflet map and dialogs
+  useEffect(() => {
+    const dialogStyle = `
+      [data-radix-dialog-overlay] {
+        z-index: 9999 !important;
+      }
+      [data-radix-dialog-content] {
+        z-index: 10000 !important;
+      }
+      .leaflet-container {
+        z-index: 1 !important;
+      }
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = dialogStyle;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const form = useForm<DonationFormData>({
     resolver: zodResolver(donationFormSchema),
@@ -591,7 +614,7 @@ export default function Donors() {
       {/* Payment Form Dialog */}
       {showPaymentForm && (selectedRequest || selectedLocation) && (
         <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md z-[9999] relative">
             <PaymentForm
               recipientId={selectedRequest?.requesterId || selectedLocation?.id}
               recipientName={selectedRequest?.title || selectedLocation?.name}

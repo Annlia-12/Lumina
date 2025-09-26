@@ -9,6 +9,26 @@ import { MapPin, Search, Navigation, Heart, Building, Users } from "lucide-react
 import { motion } from "framer-motion";
 import "leaflet/dist/leaflet.css";
 
+// Fix for Leaflet z-index issues
+const leafletStyle = `
+  .leaflet-container {
+    z-index: 1 !important;
+  }
+  .leaflet-popup {
+    z-index: 1000 !important;
+  }
+  .leaflet-control-container {
+    z-index: 1000 !important;
+  }
+`;
+
+// Inject the styles
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = leafletStyle;
+  document.head.appendChild(style);
+}
+
 // Fix for default markers in react-leaflet
 import L from "leaflet";
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -293,7 +313,7 @@ export function DonationMap({ onLocationSelect, userLocation }: DonationMapProps
               <MapContainer
                 center={mapCenter}
                 zoom={mapZoom}
-                style={{ height: "100%", width: "100%" }}
+                style={{ height: "100%", width: "100%", zIndex: 1 }}
                 className="rounded-lg"
               >
                 <MapUpdater center={mapCenter} zoom={mapZoom} />
