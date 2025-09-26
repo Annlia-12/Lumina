@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,7 +33,8 @@ import {
   Calendar,
   CheckCircle,
   AlertTriangle,
-  Key
+  Key,
+  Map
 } from "lucide-react";
 
 const homeOfferSchema = insertDonationSchema.extend({
@@ -443,10 +445,14 @@ export default function Homes() {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <Tabs defaultValue="my-offers" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="my-offers" data-testid="tab-my-offers">My Offers</TabsTrigger>
                 <TabsTrigger value="requests" data-testid="tab-shelter-requests">Shelter Requests</TabsTrigger>
                 <TabsTrigger value="safety" data-testid="tab-safety-resources">Safety & Resources</TabsTrigger>
+                <TabsTrigger value="map" className="flex items-center space-x-2" data-testid="tab-map">
+                  <Map size={16} />
+                  <span>Find Nearby</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="my-offers">
@@ -737,6 +743,13 @@ export default function Homes() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="map">
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
               </TabsContent>
             </Tabs>
           </motion.div>

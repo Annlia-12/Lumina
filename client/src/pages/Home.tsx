@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { CategoryGrid } from "@/components/cards/CategoryCard";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
-import { InteractiveMap } from "@/components/map/InteractiveMap";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 
 import {
@@ -280,7 +280,10 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <InteractiveMap />
+            <DonationMap 
+              onLocationSelect={(location) => console.log('Selected location:', location)}
+              userLocation={undefined}
+            />
           </motion.div>
         </div>
       </section>

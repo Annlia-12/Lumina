@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,7 +33,8 @@ import {
   DollarSign,
   Heart,
   Star,
-  PartyPopper
+  PartyPopper,
+  Map
 } from "lucide-react";
 
 const eventSchema = insertActivitySchema.extend({
@@ -433,10 +435,14 @@ export default function Events() {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <Tabs defaultValue="my-events" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="my-events" data-testid="tab-my-events">My Events</TabsTrigger>
                 <TabsTrigger value="upcoming" data-testid="tab-upcoming-events">Upcoming Events</TabsTrigger>
                 <TabsTrigger value="analytics" data-testid="tab-event-analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="map" className="flex items-center space-x-2" data-testid="tab-map">
+                  <Map size={16} />
+                  <span>Find Nearby</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="my-events">
@@ -738,6 +744,13 @@ export default function Events() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="map">
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
               </TabsContent>
             </Tabs>
           </motion.div>

@@ -12,8 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -31,7 +33,8 @@ import {
   Clock,
   Truck,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Map
 } from "lucide-react";
 
 const farmDonationSchema = insertDonationSchema.extend({
@@ -398,13 +401,27 @@ export default function Farmers() {
             ))}
           </div>
 
-          {/* My Produce */}
+          {/* Main Content Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mb-8"
           >
+            <Tabs defaultValue="produce" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="produce" className="flex items-center space-x-2">
+                  <Wheat size={16} />
+                  <span>My Produce</span>
+                </TabsTrigger>
+                <TabsTrigger value="map" className="flex items-center space-x-2">
+                  <Map size={16} />
+                  <span>Find Nearby</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="produce" className="space-y-6">
+                {/* My Produce */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -502,14 +519,8 @@ export default function Farmers() {
                 )}
               </CardContent>
             </Card>
-          </motion.div>
 
-          {/* Food Requests */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
+            {/* Food Requests */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -593,6 +604,15 @@ export default function Farmers() {
                 )}
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="map">
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
+              </TabsContent>
+            </Tabs>
           </motion.div>
         </div>
       </div>

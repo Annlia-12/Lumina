@@ -10,7 +10,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import { ProfileCard } from "@/components/profile/ProfileCard";
-import { InteractiveMap } from "@/components/map/InteractiveMap";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/lib/constants";
@@ -305,7 +305,10 @@ export default function Dashboard() {
               </TabsContent>
 
               <TabsContent value="map">
-                <InteractiveMap height="h-[500px]" />
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
               </TabsContent>
 
               <TabsContent value="matches">

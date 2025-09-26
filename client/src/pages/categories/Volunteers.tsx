@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -23,7 +25,8 @@ import {
   Plus,
   CheckCircle,
   Star,
-  Award
+  Award,
+  Map
 } from "lucide-react";
 
 export default function Volunteers() {
@@ -181,19 +184,32 @@ export default function Volunteers() {
             </CardContent>
           </Card>
 
-          {/* Volunteer Opportunities */}
+          {/* Main Content Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="text-accent" size={24} />
-                  <span>Upcoming Opportunities</span>
-                </CardTitle>
-              </CardHeader>
+            <Tabs defaultValue="opportunities" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="opportunities" className="flex items-center space-x-2">
+                  <Calendar size={16} />
+                  <span>Opportunities</span>
+                </TabsTrigger>
+                <TabsTrigger value="map" className="flex items-center space-x-2">
+                  <Map size={16} />
+                  <span>Find Nearby</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="opportunities">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Calendar className="text-accent" size={24} />
+                      <span>Upcoming Opportunities</span>
+                    </CardTitle>
+                  </CardHeader>
               <CardContent>
                 {activitiesLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -306,8 +322,17 @@ export default function Volunteers() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="map">
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
+              </TabsContent>
+            </Tabs>
           </motion.div>
         </div>
       </div>
