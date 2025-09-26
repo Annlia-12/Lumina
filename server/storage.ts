@@ -55,7 +55,7 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User> = new Map();
-  private organizations: Map<string, Organization> = new Map();
+  private organizations: Map<string, Organization & { location?: { lat: number; lng: number; address: string } }> = new Map();
   private donations: Map<string, Donation> = new Map();
   private requests: Map<string, Request> = new Map();
   private activities: Map<string, Activity> = new Map();
@@ -75,13 +75,19 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = {
-      ...insertUser,
-      id,
-      avatar: null,
-      verified: false,
-      createdAt: new Date(),
-    };
+      const user: User = {
+        id,
+        name: insertUser.name,
+        email: insertUser.email,
+        password: insertUser.password,
+        userType: insertUser.userType,
+        phone: insertUser.phone ?? null,
+        avatar: null,
+        bio: insertUser.bio ?? null,
+        location: insertUser.location ?? null,
+        verified: false,
+        createdAt: new Date(),
+      };
     this.users.set(id, user);
     return user;
   }
@@ -94,14 +100,18 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
-  async createOrganization(orgData: InsertOrganization & { userId: string }): Promise<Organization> {
+  async createOrganization(orgData: InsertOrganization & { userId: string; location?: { lat: number; lng: number; address: string } }): Promise<Organization & { location?: { lat: number; lng: number; address: string } }> {
     const id = randomUUID();
-    const organization: Organization = {
-      ...orgData,
+    const organization: Organization & { location?: { lat: number; lng: number; address: string } } = {
       id,
-      documents: orgData.documents || [],
+      userId: orgData.userId,
+      name: orgData.name,
+      description: orgData.description ?? null,
+      website: orgData.website ?? null,
+      documents: orgData.documents ?? [],
       verified: false,
       createdAt: new Date(),
+      location: orgData.location ?? undefined,
     };
     this.organizations.set(id, organization);
     return organization;
@@ -111,16 +121,41 @@ export class MemStorage implements IStorage {
     return Array.from(this.organizations.values()).find(org => org.userId === userId);
   }
 
+  async getOrganizationsByLocation({ lat, lng, radius = 10 }: { lat: number; lng: number; radius?: number }): Promise<Organization[]> {
+    function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
+      const toRad = (x: number) => x * Math.PI / 180;
+      const R = 6371; // km
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    return Array.from(this.organizations.values()).filter(org => {
+      if (!org.location || typeof org.location.lat !== 'number' || typeof org.location.lng !== 'number') return false;
+      return haversine(lat, lng, org.location.lat, org.location.lng) <= radius;
+    });
+  }
+
   async createDonation(donationData: InsertDonation & { donorId: string }): Promise<Donation> {
     const id = randomUUID();
-    const donation: Donation = {
-      ...donationData,
-      id,
-      recipientId: null,
-      images: donationData.images || [],
-      status: "active",
-      createdAt: new Date(),
-    };
+      const donation: Donation = {
+        id,
+        donorId: donationData.donorId,
+        recipientId: null,
+        type: donationData.type,
+        title: donationData.title,
+        description: donationData.description ?? null,
+        amount: donationData.amount ?? null,
+        quantity: donationData.quantity ?? null,
+        location: donationData.location ?? null,
+        images: donationData.images ?? [],
+        status: "active",
+        expiryDate: donationData.expiryDate ?? null,
+        createdAt: new Date(),
+      };
     this.donations.set(id, donation);
     
     // Add to activity feed
@@ -162,27 +197,32 @@ export class MemStorage implements IStorage {
   async createRequest(requestData: InsertRequest & { requesterId: string }): Promise<Request> {
     const id = randomUUID();
     const request: Request = {
-      ...requestData,
       id,
+      requesterId: requestData.requesterId,
+      type: requestData.type,
+      title: requestData.title,
+      description: requestData.description,
+      urgency: requestData.urgency ?? "medium",
+      targetAmount: requestData.targetAmount ?? null,
       raisedAmount: "0",
+      targetQuantity: requestData.targetQuantity ?? null,
       receivedQuantity: 0,
-      images: requestData.images || [],
+      location: requestData.location ?? null,
+      images: requestData.images ?? [],
       status: "active",
+      deadline: requestData.deadline ?? null,
       createdAt: new Date(),
     };
     this.requests.set(id, request);
-
-    // Add to activity feed
     await this.createActivityFeedItem({
       userId: requestData.requesterId,
       type: 'request',
       title: `New request: ${request.title}`,
       description: request.description,
-      metadata: { requestId: id, urgency: request.urgency },
+      metadata: { requestId: id, urgency: request.urgency ?? "medium" },
       likes: 0,
       comments: 0,
     });
-
     return request;
   }
 
@@ -215,16 +255,20 @@ export class MemStorage implements IStorage {
   async createActivity(activityData: InsertActivity & { organizerId: string }): Promise<Activity> {
     const id = randomUUID();
     const activity: Activity = {
-      ...activityData,
       id,
+      organizerId: activityData.organizerId,
+      title: activityData.title,
+      description: activityData.description,
+      location: activityData.location,
+      startTime: activityData.startTime,
+      endTime: activityData.endTime,
+      maxVolunteers: activityData.maxVolunteers ?? null,
       currentVolunteers: 0,
-      skills: activityData.skills || [],
+      skills: activityData.skills ?? [],
       status: "active",
       createdAt: new Date(),
     };
     this.activities.set(id, activity);
-
-    // Add to activity feed
     await this.createActivityFeedItem({
       userId: activityData.organizerId,
       type: 'volunteer',
@@ -234,7 +278,6 @@ export class MemStorage implements IStorage {
       likes: 0,
       comments: 0,
     });
-
     return activity;
   }
 
@@ -257,9 +300,11 @@ export class MemStorage implements IStorage {
   async createVolunteerRegistration(registrationData: InsertVolunteerRegistration & { volunteerId: string }): Promise<VolunteerRegistration> {
     const id = randomUUID();
     const registration: VolunteerRegistration = {
-      ...registrationData,
       id,
+      activityId: registrationData.activityId,
+      volunteerId: registrationData.volunteerId,
       status: "pending",
+      message: registrationData.message ?? null,
       createdAt: new Date(),
     };
     this.volunteerRegistrations.set(id, registration);
@@ -277,8 +322,14 @@ export class MemStorage implements IStorage {
   async createMatch(matchData: Omit<Match, 'id' | 'createdAt'>): Promise<Match> {
     const id = randomUUID();
     const match: Match = {
-      ...matchData,
       id,
+      donationId: matchData.donationId ?? null,
+      requestId: matchData.requestId ?? null,
+      activityId: matchData.activityId ?? null,
+      userId: matchData.userId,
+      score: matchData.score,
+      reason: matchData.reason ?? null,
+      status: matchData.status ?? "pending",
       createdAt: new Date(),
     };
     this.matches.set(id, match);
@@ -305,8 +356,15 @@ export class MemStorage implements IStorage {
   async createPayment(paymentData: InsertPayment & { payerId: string }): Promise<Payment> {
     const id = randomUUID();
     const payment: Payment = {
-      ...paymentData,
       id,
+      payerId: paymentData.payerId,
+      recipientId: paymentData.recipientId,
+      donationId: paymentData.donationId ?? null,
+      requestId: paymentData.requestId ?? null,
+      amount: paymentData.amount,
+      razorpayPaymentId: paymentData.razorpayPaymentId ?? null,
+      razorpayOrderId: paymentData.razorpayOrderId ?? null,
+      status: paymentData.status,
       createdAt: new Date(),
     };
     this.payments.set(id, payment);

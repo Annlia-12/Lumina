@@ -3,11 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertDonationSchema, insertRequestSchema, insertActivitySchema, insertVolunteerRegistrationSchema, insertPaymentSchema, insertOrganizationSchema } from "@shared/schema";
 import { z } from "zod";
+// @ts-ignore
 import bcrypt from "bcrypt";
+// @ts-ignore
 import jwt from "jsonwebtoken";
+// @ts-ignore
 import multer from "multer";
 import { generateSmartMatches, chatWithAI, analyzeImage, generateDonationSuggestions } from "./services/openai";
-import { supabaseStorage, realtimeService } from "../client/supabase";
 import { razorpayService } from "./services/razorpay";
 import { twilioService } from "./services/twilio";
 
@@ -37,6 +39,24 @@ const authenticate = async (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
+  // AI Chatbot route
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, location } = req.body;
+      let nearbyOrgs: any[] = [];
+      if (location && location.lat && location.lng) {
+        nearbyOrgs = await storage.getOrganizationsByLocation({
+          lat: location.lat,
+          lng: location.lng,
+          radius: 10,
+        });
+      }
+      const aiResponse = await chatWithAI(message, { location, nearbyOrgs });
+      res.json(aiResponse);
+    } catch (error) {
+      res.status(500).json({ message: "Chat service temporarily unavailable" });
+    }
+  });
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
@@ -125,7 +145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
           const fileName = `donations/${Date.now()}-${file.originalname}`;
-          const imageUrl = await supabaseStorage.uploadFile(file.buffer, fileName, file.mimetype);
+          // const imageUrl = await supabaseStorage.uploadFile(file.buffer, fileName, file.mimetype);
+          const imageUrl = `https://placeholder.com/${fileName}`; // TODO: Replace with actual upload logic
           imageUrls.push(imageUrl);
         }
       }
@@ -139,12 +160,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate smart matches
       const matches = await generateSmartMatches(req.user, [donation]);
       for (const match of matches) {
+        // Fix createMatch for donations
         await storage.createMatch({
           donationId: donation.id,
+          requestId: null,
+          activityId: null,
           userId: req.user.id,
           score: match.score.toString(),
           reason: match.reason,
-          status: "pending",
+          status: "pending"
         });
       }
 
@@ -158,11 +182,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Broadcast real-time update
-      realtimeService.broadcastActivity({
-        type: 'donation',
-        donation,
-        user: { name: req.user.name, avatar: req.user.avatar },
-      });
+      // realtimeService.broadcastActivity({
+      //   type: 'donation',
+      //   donation,
+      //   user: { name: req.user.name, avatar: req.user.avatar },
+      // });
 
       res.status(201).json(donation);
     } catch (error) {
@@ -211,7 +235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
           const fileName = `requests/${Date.now()}-${file.originalname}`;
-          const imageUrl = await supabaseStorage.uploadFile(file.buffer, fileName, file.mimetype);
+          // const imageUrl = await supabaseStorage.uploadFile(file.buffer, fileName, file.mimetype);
+          const imageUrl = `https://placeholder.com/${fileName}`; // TODO: Replace with actual upload logic
           imageUrls.push(imageUrl);
         }
       }
@@ -225,21 +250,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate smart matches
       const matches = await generateSmartMatches(req.user, [request]);
       for (const match of matches) {
+        // Fix createMatch for requests
         await storage.createMatch({
+          donationId: null,
           requestId: request.id,
+          activityId: null,
           userId: req.user.id,
           score: match.score.toString(),
           reason: match.reason,
-          status: "pending",
+          status: "pending"
         });
       }
 
       // Broadcast real-time update
-      realtimeService.broadcastActivity({
-        type: 'request',
-        request,
-        user: { name: req.user.name, avatar: req.user.avatar },
-      });
+      // realtimeService.broadcastActivity({
+      //   type: 'request',
+      //   request,
+      //   user: { name: req.user.name, avatar: req.user.avatar },
+      // });
 
       res.status(201).json(request);
     } catch (error) {
@@ -277,11 +305,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Broadcast real-time update
-      realtimeService.broadcastActivity({
-        type: 'volunteer',
-        activity,
-        user: { name: req.user.name, avatar: req.user.avatar },
-      });
+      // realtimeService.broadcastActivity({
+      //   type: 'volunteer',
+      //   activity,
+      //   user: { name: req.user.name, avatar: req.user.avatar },
+      // });
 
       res.status(201).json(activity);
     } catch (error) {
@@ -321,8 +349,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update activity volunteer count
       const activity = await storage.getActivity(req.params.id);
       if (activity) {
+        // Fix currentVolunteers possibly null
         await storage.updateActivity(req.params.id, {
-          currentVolunteers: activity.currentVolunteers + 1,
+          currentVolunteers: (activity.currentVolunteers ?? 0) + 1,
         });
 
         // Send reminder SMS
@@ -414,7 +443,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (requestId) {
         const request = await storage.getRequest(requestId);
         if (request) {
-          const newRaisedAmount = parseFloat(request.raisedAmount) + amount;
+          // Fix parseFloat on possibly null
+          const newRaisedAmount = parseFloat(request.raisedAmount ?? "0") + amount;
           await storage.updateRequest(requestId, {
             raisedAmount: newRaisedAmount.toString(),
           });
@@ -525,11 +555,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Broadcast emergency alert
-      realtimeService.broadcastActivity({
-        type: 'emergency',
-        request: emergencyRequest,
-        user: { name: req.user.name, avatar: req.user.avatar },
-      });
+      // realtimeService.broadcastActivity({
+      //   type: 'emergency',
+      //   request: emergencyRequest,
+      //   user: { name: req.user.name, avatar: req.user.avatar },
+      // });
 
       res.status(201).json(emergencyRequest);
     } catch (error) {

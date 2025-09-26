@@ -54,9 +54,9 @@ export class RazorpayService {
     }
   }
 
-  async capturePayment(paymentId: string, amount: number) {
+  async capturePayment(paymentId: string, amount: number, currency: string = 'INR') {
     try {
-      const payment = await razorpay.payments.capture(paymentId, amount);
+      const payment = await razorpay.payments.capture(paymentId, amount, currency);
       return payment;
     } catch (error) {
       console.error('Payment capture failed:', error);

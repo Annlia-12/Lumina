@@ -31,6 +31,7 @@ export function AIChatbot() {
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
+      // Send user message to backend (which uses gpt-4o-mini)
       const response = await apiRequest("POST", API_ENDPOINTS.CHAT, { message });
       return response.json();
     },
@@ -38,7 +39,7 @@ export function AIChatbot() {
       const aiMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: data.message,
+        content: data.message, // expects backend to return { message: "..." }
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -75,7 +76,7 @@ export function AIChatbot() {
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
 
-    // Send to AI
+    // Send message to backend
     chatMutation.mutate(inputValue);
   };
 
@@ -192,7 +193,7 @@ export function AIChatbot() {
                       )}
                     </motion.div>
                   ))}
-                  
+
                   {chatMutation.isPending && (
                     <motion.div
                       initial={{ opacity: 0 }}
