@@ -67,6 +67,8 @@ export default function Donors() {
       }
       [data-radix-dialog-content] {
         z-index: 10000 !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
       }
       .leaflet-container {
         z-index: 1 !important;
@@ -614,7 +616,7 @@ export default function Donors() {
       {/* Payment Form Dialog */}
       {showPaymentForm && (selectedRequest || selectedLocation) && (
         <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
-          <DialogContent className="sm:max-w-md z-[9999] relative">
+          <DialogContent className="sm:max-w-md z-[9999] max-h-[90vh] overflow-y-auto">
             <PaymentForm
               recipientId={selectedRequest?.requesterId || selectedLocation?.id}
               recipientName={selectedRequest?.title || selectedLocation?.name}

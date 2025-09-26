@@ -208,10 +208,10 @@ export function PaymentForm({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center space-x-2">
-            <CreditCard className="text-primary" size={24} />
+      <Card className="w-full max-w-md mx-auto max-h-[80vh] overflow-y-auto">
+        <CardHeader className="text-center pb-4">
+          <CardTitle className="flex items-center justify-center space-x-2 text-lg">
+            <CreditCard className="text-primary" size={20} />
             <span>Secure Donation</span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -219,9 +219,9 @@ export function PaymentForm({
           </p>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="pb-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handlePayment)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(handlePayment)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="amount"
@@ -239,7 +239,7 @@ export function PaymentForm({
                           data-testid="input-payment-amount"
                         />
                         
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-1">
                           {predefinedAmounts.map((amount) => (
                             <Button
                               key={amount}
@@ -247,7 +247,7 @@ export function PaymentForm({
                               variant="outline"
                               size="sm"
                               onClick={() => field.onChange(amount)}
-                              className="text-sm"
+                              className="text-xs py-1"
                               data-testid={`button-amount-${amount}`}
                             >
                               ₹{amount}
