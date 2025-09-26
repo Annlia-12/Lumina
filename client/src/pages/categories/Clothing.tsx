@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -31,7 +32,8 @@ import {
   Clock,
   Scissors,
   Palette,
-  Star
+  Star,
+  Map
 } from "lucide-react";
 
 const clothingDonationSchema = insertDonationSchema.extend({
@@ -455,10 +457,14 @@ export default function Clothing() {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <Tabs defaultValue="donations" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="donations" data-testid="tab-my-donations">My Donations</TabsTrigger>
                 <TabsTrigger value="requests" data-testid="tab-clothing-requests">Clothing Requests</TabsTrigger>
                 <TabsTrigger value="impact" data-testid="tab-sustainability">Sustainability Impact</TabsTrigger>
+                <TabsTrigger value="map" className="flex items-center space-x-2" data-testid="tab-map">
+                  <Map size={16} />
+                  <span>Find Nearby</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="donations">
@@ -741,6 +747,13 @@ export default function Clothing() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="map">
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
               </TabsContent>
             </Tabs>
           </motion.div>

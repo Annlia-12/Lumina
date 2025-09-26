@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { DonationMap } from "@/components/map/DonationMap";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -34,7 +35,8 @@ import {
   Heart,
   Package,
   Radio,
-  Siren
+  Siren,
+  Map
 } from "lucide-react";
 
 const emergencyDonationSchema = insertDonationSchema.extend({
@@ -859,11 +861,15 @@ export default function Disaster() {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <Tabs defaultValue="emergencies" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="emergencies" data-testid="tab-emergencies">Active Emergencies</TabsTrigger>
                 <TabsTrigger value="supplies" data-testid="tab-emergency-supplies">Emergency Supplies</TabsTrigger>
                 <TabsTrigger value="responses" data-testid="tab-response-teams">Response Teams</TabsTrigger>
                 <TabsTrigger value="resources" data-testid="tab-emergency-resources">Emergency Resources</TabsTrigger>
+                <TabsTrigger value="map" className="flex items-center space-x-2" data-testid="tab-map">
+                  <Map size={16} />
+                  <span>Find Nearby</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="emergencies">
@@ -1272,6 +1278,13 @@ export default function Disaster() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="map">
+                <DonationMap 
+                  onLocationSelect={(location) => console.log('Selected location:', location)}
+                  userLocation={undefined}
+                />
               </TabsContent>
             </Tabs>
           </motion.div>
