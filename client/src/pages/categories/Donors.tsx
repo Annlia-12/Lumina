@@ -12,10 +12,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AIChatbot } from "@/components/chat/AIChatbot";
 import { PaymentForm } from "@/components/payments/PaymentForm";
+import { DonationMap } from "@/components/map/DonationMap";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS, DONATION_TYPES } from "@/lib/constants";
@@ -32,7 +34,10 @@ import {
   DollarSign,
   Users,
   Building,
-  Utensils
+  Utensils,
+  Map,
+  List,
+  Navigation
 } from "lucide-react";
 
 const donationFormSchema = insertDonationSchema.extend({
@@ -47,8 +52,10 @@ export default function Donors() {
   const [showDonationForm, setShowDonationForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [filterType, setFilterType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | undefined>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -132,6 +139,31 @@ export default function Donors() {
   const handleDonate = (request: any) => {
     setSelectedRequest(request);
     setShowPaymentForm(true);
+  };
+
+  const handleLocationSelect = (location: any) => {
+    setSelectedLocation(location);
+    setShowPaymentForm(true);
+  };
+
+  const handleGetUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          toast({
+            title: "Location Error",
+            description: "Unable to get your location. Please try again.",
+            variant: "destructive",
+          });
+        }
+      );
+    }
   };
 
   const stats = [
@@ -332,176 +364,254 @@ export default function Donors() {
             ))}
           </div>
 
-          {/* Filters & Search */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-                    <Input
-                      placeholder="Search requests..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                      data-testid="input-search-requests"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Filter size={16} className="text-muted-foreground" />
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-40" data-testid="select-filter-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      {Object.entries(DONATION_TYPES).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="requests" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="requests" className="flex items-center space-x-2">
+                <List size={16} />
+                <span>Active Requests</span>
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex items-center space-x-2">
+                <Map size={16} />
+                <span>Find Nearby</span>
+              </TabsTrigger>
+              <TabsTrigger value="location" className="flex items-center space-x-2">
+                <Navigation size={16} />
+                <span>My Location</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Active Requests */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Utensils className="text-accent" size={24} />
-                  <span>Active Requests</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {requestsLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="h-48 bg-muted rounded-lg mb-3"></div>
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
+            {/* Active Requests Tab */}
+            <TabsContent value="requests" className="space-y-6">
+              {/* Filters & Search */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                        <Input
+                          placeholder="Search requests..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                          data-testid="input-search-requests"
+                        />
                       </div>
-                    ))}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Filter size={16} className="text-muted-foreground" />
+                      <Select value={filterType} onValueChange={setFilterType}>
+                        <SelectTrigger className="w-40" data-testid="select-filter-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          {Object.entries(DONATION_TYPES).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                ) : filteredRequests.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Heart className="mx-auto mb-4 text-muted-foreground" size={48} />
-                    <h3 className="text-lg font-semibold mb-2">No Requests Found</h3>
-                    <p className="text-muted-foreground">
-                      {searchQuery || filterType !== "all" 
-                        ? "Try adjusting your filters to find more requests."
-                        : "There are currently no active requests. Check back soon!"
-                      }
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredRequests.map((request: any, index: number) => (
-                      <motion.div
-                        key={request.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                      >
-                        <Card className="hover:shadow-lg transition-shadow">
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs ${
-                                  request.urgency === 'emergency' ? 'bg-destructive text-destructive-foreground' :
-                                  request.urgency === 'high' ? 'bg-orange-100 text-orange-700' :
-                                  'bg-secondary text-secondary-foreground'
-                                }`}
-                              >
-                                {request.urgency} priority
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                {DONATION_TYPES[request.type as keyof typeof DONATION_TYPES]}
-                              </Badge>
-                            </div>
-                            
-                            <h4 className="font-semibold mb-2 line-clamp-2">{request.title}</h4>
-                            <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                              {request.description}
-                            </p>
+                </CardContent>
+              </Card>
 
-                            {request.targetAmount && (
-                              <div className="mb-4">
-                                <div className="flex justify-between text-sm mb-1">
-                                  <span>Progress</span>
-                                  <span>₹{request.raisedAmount || 0} / ₹{request.targetAmount}</span>
+              {/* Active Requests */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Utensils className="text-accent" size={24} />
+                      <span>Active Requests</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {requestsLoading ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i} className="animate-pulse">
+                            <div className="h-48 bg-muted rounded-lg mb-3"></div>
+                            <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : filteredRequests.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Heart className="mx-auto mb-4 text-muted-foreground" size={48} />
+                        <h3 className="text-lg font-semibold mb-2">No Requests Found</h3>
+                        <p className="text-muted-foreground">
+                          {searchQuery || filterType !== "all" 
+                            ? "Try adjusting your filters to find more requests."
+                            : "There are currently no active requests. Check back soon!"
+                          }
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredRequests.map((request: any, index: number) => (
+                          <motion.div
+                            key={request.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: index * 0.1 }}
+                          >
+                            <Card className="hover:shadow-lg transition-shadow">
+                              <CardContent className="p-6">
+                                <div className="flex items-start justify-between mb-3">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      request.urgency === 'emergency' ? 'bg-destructive text-destructive-foreground' :
+                                      request.urgency === 'high' ? 'bg-orange-100 text-orange-700' :
+                                      'bg-secondary text-secondary-foreground'
+                                    }`}
+                                  >
+                                    {request.urgency} priority
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {DONATION_TYPES[request.type as keyof typeof DONATION_TYPES]}
+                                  </Badge>
                                 </div>
-                                <div className="h-2 bg-secondary rounded-full">
-                                  <div 
-                                    className="h-2 bg-primary rounded-full"
-                                    style={{ 
-                                      width: `${Math.min(100, (parseFloat(request.raisedAmount || 0) / parseFloat(request.targetAmount)) * 100)}%` 
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            )}
+                                
+                                <h4 className="font-semibold mb-2 line-clamp-2">{request.title}</h4>
+                                <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                                  {request.description}
+                                </p>
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                                {request.location && (
-                                  <div className="flex items-center space-x-1">
-                                    <MapPin size={12} />
-                                    <span>{request.location.address}</span>
+                                {request.targetAmount && (
+                                  <div className="mb-4">
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span>Progress</span>
+                                      <span>₹{request.raisedAmount || 0} / ₹{request.targetAmount}</span>
+                                    </div>
+                                    <div className="h-2 bg-secondary rounded-full">
+                                      <div 
+                                        className="h-2 bg-primary rounded-full"
+                                        style={{ 
+                                          width: `${Math.min(100, (parseFloat(request.raisedAmount || 0) / parseFloat(request.targetAmount)) * 100)}%` 
+                                        }}
+                                      />
+                                    </div>
                                   </div>
                                 )}
-                                <div className="flex items-center space-x-1">
-                                  <Clock size={12} />
-                                  <span>{new Date(request.createdAt).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                            </div>
 
-                            <Button 
-                              className="w-full mt-4" 
-                              size="sm"
-                              onClick={() => handleDonate(request)}
-                              data-testid={`button-donate-${request.id}`}
-                            >
-                              <Gift className="mr-2" size={16} />
-                              Donate Now
-                            </Button>
-                          </CardContent>
-                        </Card>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                                    {request.location && (
+                                      <div className="flex items-center space-x-1">
+                                        <MapPin size={12} />
+                                        <span>{request.location.address}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center space-x-1">
+                                      <Clock size={12} />
+                                      <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <Button 
+                                  className="w-full mt-4" 
+                                  size="sm"
+                                  onClick={() => handleDonate(request)}
+                                  data-testid={`button-donate-${request.id}`}
+                                >
+                                  <Gift className="mr-2" size={16} />
+                                  Donate Now
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* Map Tab */}
+            <TabsContent value="map">
+              <DonationMap 
+                onLocationSelect={handleLocationSelect}
+                userLocation={userLocation}
+              />
+            </TabsContent>
+
+            {/* Location Tab */}
+            <TabsContent value="location">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Navigation className="text-primary" size={24} />
+                    <span>Find Donations Near You</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Navigation className="mx-auto mb-4 text-muted-foreground" size={48} />
+                    <h3 className="text-lg font-semibold mb-2">Enable Location Services</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Allow us to access your location to find nearby donation opportunities and organizations.
+                    </p>
+                    <Button onClick={handleGetUserLocation} className="mb-4">
+                      <Navigation className="mr-2" size={16} />
+                      Get My Location
+                    </Button>
+                    {userLocation && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg"
+                      >
+                        <p className="text-green-800 font-medium">
+                          Location found! Now you can see nearby donation opportunities.
+                        </p>
+                        <p className="text-sm text-green-600 mt-1">
+                          Lat: {userLocation.lat.toFixed(4)}, Lng: {userLocation.lng.toFixed(4)}
+                        </p>
                       </motion.div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
       {/* Payment Form Dialog */}
-      {showPaymentForm && selectedRequest && (
+      {showPaymentForm && (selectedRequest || selectedLocation) && (
         <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
           <DialogContent className="sm:max-w-md">
             <PaymentForm
-              recipientId={selectedRequest.requesterId}
-              recipientName="Request Creator" // In real app, fetch user name
-              requestId={selectedRequest.id}
-              suggestedAmount={selectedRequest.targetAmount ? Math.min(1000, parseFloat(selectedRequest.targetAmount) - parseFloat(selectedRequest.raisedAmount || 0)) : 500}
+              recipientId={selectedRequest?.requesterId || selectedLocation?.id}
+              recipientName={selectedRequest?.title || selectedLocation?.name}
+              requestId={selectedRequest?.id}
+              suggestedAmount={
+                selectedRequest?.targetAmount 
+                  ? Math.min(1000, parseFloat(selectedRequest.targetAmount) - parseFloat(selectedRequest.raisedAmount || 0))
+                  : 500
+              }
               onSuccess={() => {
                 setShowPaymentForm(false);
+                setSelectedRequest(null);
+                setSelectedLocation(null);
                 queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.REQUESTS] });
               }}
-              onCancel={() => setShowPaymentForm(false)}
+              onCancel={() => {
+                setShowPaymentForm(false);
+                setSelectedRequest(null);
+                setSelectedLocation(null);
+              }}
             />
           </DialogContent>
         </Dialog>

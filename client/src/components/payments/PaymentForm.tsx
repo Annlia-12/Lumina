@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS, RAZORPAY_OPTIONS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { CreditCard, Shield, Lock } from "lucide-react";
+import { CreditCard, Shield, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 const paymentSchema = z.object({
@@ -36,12 +36,28 @@ interface PaymentFormProps {
   onCancel?: () => void;
 }
 
-// Mock Razorpay integration
+// Razorpay integration
 declare global {
   interface Window {
     Razorpay?: any;
   }
 }
+
+// Load Razorpay script
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 export function PaymentForm({ 
   recipientId, 
@@ -53,7 +69,16 @@ export function PaymentForm({
   onCancel 
 }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const { toast } = useToast();
+
+  // Load Razorpay script on component mount
+  useEffect(() => {
+    loadRazorpayScript().then((loaded) => {
+      setRazorpayLoaded(loaded);
+    });
+  }, []);
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -101,31 +126,70 @@ export function PaymentForm({
   const handlePayment = async (data: PaymentFormData) => {
     try {
       setIsProcessing(true);
+      setPaymentStatus('processing');
 
       // Create order
       const order = await createOrderMutation.mutateAsync(data);
 
-      // Mock Razorpay integration
-      if (typeof window !== "undefined") {
-        // In a real implementation, this would use actual Razorpay
-        const mockPaymentSuccess = () => {
-          const mockPaymentData = {
-            razorpay_order_id: order.id,
-            razorpay_payment_id: `pay_mock_${Date.now()}`,
-            razorpay_signature: `mock_signature_${Date.now()}`,
-            amount: data.amount,
-            recipientId: data.recipientId,
-            donationId: data.donationId,
-            requestId: data.requestId,
-          };
-
-          verifyPaymentMutation.mutate(mockPaymentData);
-        };
-
-        // Simulate payment processing
-        setTimeout(mockPaymentSuccess, 2000);
+      if (!razorpayLoaded || !window.Razorpay) {
+        throw new Error('Razorpay not loaded');
       }
+
+      const options = {
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag', // Replace with your key
+        amount: data.amount * 100, // Convert to paise
+        currency: 'INR',
+        name: 'LuminaConnect',
+        description: `Donation to ${recipientName}`,
+        order_id: order.id,
+        handler: async (response: any) => {
+          try {
+            const paymentData = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              amount: data.amount,
+              recipientId: data.recipientId,
+              donationId: data.donationId,
+              requestId: data.requestId,
+            };
+
+            await verifyPaymentMutation.mutateAsync(paymentData);
+            setPaymentStatus('success');
+          } catch (error) {
+            setPaymentStatus('failed');
+            toast({
+              title: "Payment Verification Failed",
+              description: "There was an issue verifying your payment. Please contact support.",
+              variant: "destructive",
+            });
+          }
+        },
+        prefill: {
+          name: 'Donor',
+          email: 'donor@example.com',
+          contact: '+91-9876543210',
+        },
+        notes: {
+          donationId: data.donationId || '',
+          requestId: data.requestId || '',
+          message: data.message || '',
+        },
+        theme: {
+          color: '#3b82f6',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+            setPaymentStatus('idle');
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
     } catch (error) {
+      setPaymentStatus('failed');
       toast({
         title: "Payment Error",
         description: "Failed to initiate payment. Please try again.",
@@ -217,6 +281,29 @@ export function PaymentForm({
               />
 
               <div className="space-y-4">
+                {/* Payment Status */}
+                {paymentStatus === 'success' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg"
+                  >
+                    <CheckCircle className="text-green-600" size={20} />
+                    <span className="text-green-800 font-medium">Payment Successful!</span>
+                  </motion.div>
+                )}
+
+                {paymentStatus === 'failed' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg"
+                  >
+                    <AlertCircle className="text-red-600" size={20} />
+                    <span className="text-red-800 font-medium">Payment Failed</span>
+                  </motion.div>
+                )}
+
                 <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
                   <Shield size={16} />
                   <span>Secured by Razorpay</span>
@@ -240,7 +327,7 @@ export function PaymentForm({
                   <Button
                     type="submit"
                     className="flex-1"
-                    disabled={isProcessing || createOrderMutation.isPending || verifyPaymentMutation.isPending}
+                    disabled={isProcessing || createOrderMutation.isPending || verifyPaymentMutation.isPending || !razorpayLoaded}
                     data-testid="button-payment-submit"
                   >
                     {isProcessing ? (
@@ -248,6 +335,8 @@ export function PaymentForm({
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                         <span>Processing...</span>
                       </span>
+                    ) : !razorpayLoaded ? (
+                      "Loading Payment..."
                     ) : (
                       `Donate ₹${form.watch('amount') || 0}`
                     )}
